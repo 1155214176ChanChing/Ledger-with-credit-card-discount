@@ -82,12 +82,6 @@
                 <h3 class="text-base font-bold text-neutral-900" id="form-title">
                     新增開支
                 </h3>
-                <div class="flex bg-neutral-100 p-0.5 rounded-md text-xs">
-                    <button onclick="switchFormTab('manual')" id="tab-manual" class="px-3 py-1 font-semibold rounded bg-white text-neutral-900 shadow-sm transition-all">手動輸入</button>
-                    <button onclick="switchFormTab('ai')" id="tab-ai" class="px-3 py-1 font-semibold rounded text-neutral-500 hover:text-neutral-900 transition-all">
-                        AI 廣東話智能記帳
-                    </button>
-                </div>
             </div>
 
             <!-- MANUAL INPUT FORM -->
@@ -136,30 +130,6 @@
                 </button>
             </form>
 
-            <!-- AI INTUITIVE INPUT FORM -->
-            <div id="ai-expense-form" class="hidden space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                    <div class="md:col-span-3">
-                        <label class="block text-xs font-bold text-neutral-500 uppercase mb-1">廣東話口語輸入</label>
-                        <textarea id="ai-raw-text" rows="2" placeholder="例如：
-- 今日食譚仔用咗 58 蚊
-- 昨晚搭地鐵用左 25 元
-- 啱啱喺 UNIQLO 買咗件 199 蚊嘅衫" class="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-black focus:bg-white text-sm leading-relaxed"></textarea>
-                    </div>
-                    <div>
-                        <button onclick="parseExpenseWithAI()" id="btn-ai-parse" class="w-full bg-black hover:bg-neutral-800 text-white py-3 rounded-lg font-bold text-sm transition flex items-center justify-center space-x-2">
-                            <svg id="ai-parse-spinner" class="hidden animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <span id="ai-parse-btn-text">AI 智能分析及儲存</span>
-                        </button>
-                    </div>
-                </div>
-                <div class="text-[10px] text-neutral-400 leading-normal">
-                    提示：系統會分析口語內容並自動解析。記帳年份及月份將以您下方所選擇的「檢視月份」為基準。
-                </div>
-            </div>
         </section>
 
         <!-- SECTION 2: Prediction Dashboard & Budget Alert -->
@@ -174,7 +144,7 @@
                         <span class="text-xs text-neutral-500 block">本月預算</span>
                         <div class="flex items-center space-x-1 mt-1 justify-end">
                             <span class="text-sm text-neutral-400">$</span>
-                            <input type="number" id="budget-input" value="8000" class="bg-transparent text-neutral-900 border-b border-neutral-300 w-24 text-right focus:outline-none focus:border-black font-bold text-base" onchange="window.saveBudget(this.value)">
+                            <input type="number" id="budget-input" value="4000" class="bg-transparent text-neutral-900 border-b border-neutral-300 w-24 text-right focus:outline-none focus:border-black font-bold text-base" onchange="window.saveBudget(this.value)">
                         </div>
                     </div>
                 </div>
@@ -436,37 +406,6 @@
         }
         window.showToast = showToast;
 
-        // --- GEMINI AI API SERVICE ---
-        const apiKey = ""; // 若需要 AI 功能，請填入 API Key
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-
-        async function callGeminiAPI(payload) {
-            let delay = 1000;
-            const maxRetries = 5;
-            for (let i = 0; i < maxRetries; i++) {
-                try {
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    if (response.ok) return await response.json();
-                    if (response.status === 429 || response.status >= 500) {
-                        await new Promise(resolve => setTimeout(resolve, delay));
-                        delay *= 2;
-                        continue;
-                    }
-                    const errData = await response.json();
-                    throw new Error(errData?.error?.message || "API call failed");
-                } catch (e) {
-                    if (i === maxRetries - 1) throw e;
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                    delay *= 2;
-                }
-            }
-            throw new Error("無法連接 Gemini AI 服務。");
-        }
-
         // --- DATE SYSTEM ---
         const today = new Date();
         const currentYear = today.getFullYear();
@@ -481,7 +420,7 @@
             filterYear: currentYear,
             filterMonth: currentMonth,
             calculationDay: currentDay,
-            budget: 8000,
+            budget: 4000,
             activeFilter: 'all'
         };
 
@@ -627,7 +566,7 @@
 
             unsubBudget = onSnapshot(budgetDocRef, (docSnap) => {
                 if (docSnap.exists()) {
-                    state.budget = docSnap.data().value || 8000;
+                    state.budget = docSnap.data().value || 4000;
                     document.getElementById('budget-input').value = state.budget;
                     updateDashboard();
                 }
@@ -700,7 +639,7 @@
 
         async function saveBudget(val) {
             const num = parseFloat(val);
-            state.budget = isNaN(num) ? 8000 : num;
+            state.budget = isNaN(num) ? 4000 : num;
             if (isFirebaseActive && userId) {
                 const budgetDocRef = doc(db, 'artifacts', appId, 'users', userId, 'settings', 'budget');
                 await setDoc(budgetDocRef, { value: state.budget });
@@ -729,7 +668,7 @@
                     const parsed = JSON.parse(stored);
                     state.expenses = parsed.expenses || [];
                     state.cards = parsed.cards || [];
-                    state.budget = parsed.budget || 8000;
+                    state.budget = parsed.budget || 4000;
                     state.filterYear = parsed.filterYear ?? currentYear;
                     state.filterMonth = parsed.filterMonth ?? currentMonth;
                     state.calculationDay = parsed.calculationDay ?? currentDay;
@@ -756,119 +695,7 @@
             showToast("已清空所有帳目數據");
         }
 
-        // --- GEMINI AI QUICK ENTRY ---
-        async function parseExpenseWithAI() {
-            const rawTextEl = document.getElementById('ai-raw-text');
-            const rawText = rawTextEl.value.trim();
-            if (!rawText) {
-                showToast("請先輸入記帳文字描述");
-                return;
-            }
-
-            if (!apiKey) {
-                showToast("請在原始碼中填寫 Gemini API Key 才可使用 AI 記帳");
-                return;
-            }
-
-            const btn = document.getElementById('btn-ai-parse');
-            const spinner = document.getElementById('ai-parse-spinner');
-            const btnText = document.getElementById('ai-parse-btn-text');
-
-            btn.disabled = true;
-            spinner.classList.remove('hidden');
-            btnText.innerText = "正在分析...";
-
-            const monthTotalDays = getDaysInFilteredMonth();
-            const systemPrompt = `你是一個智能記帳解析助理。你的任務是將輸入的廣東話開支描述結構化。
-當前基準月份為：${state.filterYear}年${monthNamesZH[state.filterMonth]}月，本月共有 ${monthTotalDays} 天。
-若提及'今日' -> 號數為 ${state.filterYear === currentYear && state.filterMonth === currentMonth ? currentDay : 15}。
-若為'昨日' -> 號數遞減。
-開支類別必須為：['飲食', '交通', '購物', '娛樂', '居住', '其他'] 之一。
-金額必須為精確原價金額。`;
-
-            const payload = {
-                contents: [{ parts: [{ text: `請分析此記帳描述: "${rawText}"` }] }],
-                systemInstruction: { parts: [{ text: systemPrompt }] },
-                generationConfig: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: "OBJECT",
-                        properties: {
-                            amount: { type: "NUMBER" },
-                            category: { type: "STRING" },
-                            day: { type: "INTEGER" },
-                            note: { type: "STRING" }
-                        },
-                        required: ["amount", "category", "day", "note"]
-                    }
-                }
-            };
-
-            try {
-                const response = await callGeminiAPI(payload);
-                const jsonText = response.candidates?.[0]?.content?.parts?.[0]?.text;
-                
-                if (!jsonText) throw new Error("AI 無法分析此段描述");
-
-                const parsed = JSON.parse(jsonText);
-                const parsedAmount = parseFloat(parsed.amount);
-                const parsedDay = parseInt(parsed.day);
-                
-                if (isNaN(parsedAmount) || parsedAmount <= 0) throw new Error("解析出的金額無效");
-
-                const finalDay = (parsedDay >= 1 && parsedDay <= monthTotalDays) ? parsedDay : 15;
-                const finalCategory = ["飲食", "交通", "購物", "娛樂", "居住", "其他"].includes(parsed.category) ? parsed.category : "其他";
-
-                const newExpense = {
-                    year: state.filterYear,
-                    month: state.filterMonth,
-                    day: finalDay,
-                    category: finalCategory,
-                    originalAmount: parsedAmount,
-                    amount: parsedAmount,
-                    discountPercent: 0,
-                    cardId: "",
-                    cardName: "",
-                    note: parsed.note || `${finalCategory}開支`
-                };
-
-                await saveExpense(newExpense);
-                rawTextEl.value = "";
-                showToast(`AI 成功記帳：$${parsedAmount} (${finalDay} 號)`);
-
-            } catch (error) {
-                console.error(error);
-                showToast(`AI 記帳失敗: ${error.message || "請檢查格式後重試"}`);
-            } finally {
-                btn.disabled = false;
-                spinner.classList.add('hidden');
-                btnText.innerText = "AI 智能分析及儲存";
-            }
-        }
-
         // --- INTERACTIVE ACTIONS & LAYOUT ENGINE ---
-        function switchFormTab(mode) {
-            const tabManual = document.getElementById('tab-manual');
-            const tabAI = document.getElementById('tab-ai');
-            const manualForm = document.getElementById('add-expense-form');
-            const aiForm = document.getElementById('ai-expense-form');
-            const formTitle = document.getElementById('form-title');
-
-            if (mode === 'manual') {
-                tabManual.className = "px-3 py-1 font-semibold rounded bg-white text-neutral-900 shadow-sm transition-all";
-                tabAI.className = "px-3 py-1 font-semibold rounded text-neutral-500 hover:text-neutral-900 transition-all";
-                manualForm.classList.remove('hidden');
-                aiForm.classList.add('hidden');
-                formTitle.innerText = "新增開支";
-            } else {
-                tabAI.className = "px-3 py-1 font-semibold rounded bg-white text-neutral-900 shadow-sm transition-all";
-                tabManual.className = "px-3 py-1 font-semibold rounded text-neutral-500 hover:text-neutral-900 transition-all";
-                manualForm.classList.add('hidden');
-                aiForm.classList.remove('hidden');
-                formTitle.innerText = "AI 智能記帳助手";
-            }
-        }
-
         function getDaysInFilteredMonth() {
             return new Date(state.filterYear, state.filterMonth + 1, 0).getDate();
         }
@@ -1412,8 +1239,6 @@
         }
 
         // --- GLOBAL EXPOSURE ---
-        window.switchFormTab = switchFormTab;
-        window.parseExpenseWithAI = parseExpenseWithAI;
         window.changeCalculationDay = changeCalculationDay;
         window.resetDayToToday = resetDayToToday;
         window.clearAllData = clearAllData;
